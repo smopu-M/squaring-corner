@@ -1,0 +1,398 @@
+
+#enum IDM_ITEM1 = 1
+#enum IDM_ITEM2
+#enum IDM_ITEM3
+#enum IDM_ITEM4
+
+#define	MFS_CHECKED		0x08
+#define	MFS_UNCHECKED	0x00
+
+//二十起動防止
+if (AlreadyAppRunning()) {
+    switch langcode
+case 0x0411
+	MessageBoxW 0,"すでに起動されています。タスクトレイを確認してください。",TITL,48
+	swbreak
+case 0x0412
+	MessageBoxW 0,"이미 시작되었습니다. 작업 트레이를 확인하세요.",TITL,48
+	swbreak
+case 0x0804
+	MessageBoxW 0,"已经启动应用程序。 请检查任务栏。",TITL,48
+	swbreak
+case 0x0404
+	MessageBoxW 0,"已經啟動應用程式。 請檢查工作列。",TITL,48
+	swbreak
+default
+	MessageBoxExW 0,"Already started App.\nPlease check tasktray.",TITL,48,0x0409
+swbreak
+swend
+end
+}
+	
+	#const NOTIFYICONDATA_STRUCTSIZE 88
+
+	
+				switch langcode
+				case 0x0411
+					langmsg = "小さい角丸にする","ホットキーの設定","スタートアップに登録","終了","ホットキーを変更しました。","スタートアップに登録しました。","スタートアップの登録を解除しました。","メッセージを表示しない"
+					swbreak
+				case 0x0412
+					langmsg = "작은 뿔 동그라미","핫키의 설정","시작에 등록","종료","핫키를 변경했습니다.","시작에 등록했습니다.","시작 등록을 해제했습니다.","메시지 표시 안함"
+					swbreak
+				case 0x0804
+					langmsg = "将窗口改回圆角","热键设置","注册启动","退出","更改了热键。","在创业公司注册。","启动注册已被取消。","不显示消息"
+					swbreak
+				case 0x0404
+					langmsg = "將窗口改回圓角","熱鍵設置","注冊啓動","退出","更改了熱鍵。","在創業公司注冊。","啓動注冊已被取消。","不顯示訊息"
+					swbreak
+				default
+					langmsg = "Enable Small rounded corners","Hotkey settings","Register for startup","Exit","Changed the hotkey.","Registered for a startup.","Unregistered for a startup.","Don't show message"
+					swbreak
+				swend
+//コンテキストメニューの生成
+		hMenu.1 = CreatePopupMenu()
+		AppendMenuW hMenu.1, 0, 1, langmsg(0)+" (&S)"
+		AppendMenuW hMenu.1, 0, 2, langmsg(1)+" (&H)"
+		AppendMenuW hMenu.1, 0, 3, langmsg(2)+" (&T)"
+		AppendMenuW hMenu.1, 0, 4, langmsg(7)+" (&M)"
+		AppendMenuW hMenu.1, 0, 5, langmsg(3)+" (&X)"
+		AppendMenuW hMenu.1, $800, 0, ""
+		AppendMenuW hMenu.1, 0, 6, "About"
+
+	// タスクトレイのアイコンを表示
+	gosub *tasktray
+	
+	//エクスプローラーを再起動してもタスクトレイのアイコンが消えないようにする（タスクバーが消えてもタスクトレイに表示する処理）
+	oncmd gosub *tasktray,RegisterWindowMessageW("TaskbarCreated")
+	
+	onexit *exit_tray
+	oncmd gosub *popup , 0x0501
+	
+	screen 0,XSIZ(250),YSIZ(85),2|8
+	
+	//ホットキー設定ウィンドウを四角に変更する
+	opt = DWMWCP_DONOTROUND
+	DwmSetWindowAttribute hwnd,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
+	//ウィンドウを四角に変更に失敗した場合は、OS側で角丸ウィンドウに対応していないメッセージを表示させ使用できなくする。
+	if stat:DestroyMenu hMenu.1:Shell_NotifyIcon 2 ,nid:goto *checkos
+	
+	startup = dirinfo($10007)+ "\\SQUARING_CORNER.lnk"
+	exist startup
+	
+	//スタートアップに登録している場合はチェックする
+	if strsize >= 0:CheckMenuItem hMenu.1,3, MFS_CHECKED
+	
+	//コマンドラインに/nomsgを指定している場合はチェックする
+	if nomsg:CheckMenuItem hMenu.1,4, MFS_CHECKED
+	
+if get_dark_color_type() = 1{
+	darkmode = 1
+	opt = 1
+	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+	cls 4:color 55,55,55:boxf
+	color 255,255,255
+}else{
+	darkmode = 0
+	opt = 0
+	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+	cls
+	color 200,200,200:boxf
+	color 0,0,0
+}
+
+//メニューをダークモード化
+	lib_h = LoadLibrary("uxtheme.dll")	//SetPreferredAppModeとRefreshImmersiveColorPolicyStateを呼ぶための準備
+	add = GetProcAddress(lib_h,135) 	//SetPreferredAppModeのアドレスを取得
+	prm=1 : dum=callfunc(prm,add,1)	//SetPreferredAppModeを実行
+	add=GetProcAddress(lib_h,104)	//RefreshImmersiveColorPolicyStateのアドレスを取得
+	dum=callfunc(prm,add,0)	//RefreshImmersiveColorPolicyStateを実行
+	
+	gosub *langfont
+	objmode 2
+	
+	title TITL
+	mes langmsg(1)
+	winobj "msctls_hotkey32","", 0, WS_CHILD | WS_VISIBLE, XSIZ(250), YSIZ(30)//ホットキーコントロールを生成
+	hHotkeyCtrl  = objinfo_hwnd(stat)
+	sendmsg hHotkeyCtrl, $30, hFont
+	
+	//ホットキー設定の読み込み
+	exist "config.ini"
+	if strsize > 0 {
+		/*
+		sdim settedhotkey
+		noteload "config.ini"
+		noteget settedhotkey,0
+		
+		hotkey = int(settedhotkey)
+		settedhotkey = ""
+		*/
+		hotkey = getini(dir_cur+"\\config.ini","hotkey",0,0)
+		if hotkey = 0:hotkey =891
+	}else{
+		hotkey = 891
+	}
+	
+	sendmsg hHotkeyCtrl, HKM_SETHOTKEY,hotkey, 0
+	oncmd gosub *sendhotkey,WM_HOTKEY
+	
+	objsize XSIZ(125),YSIZ(30)
+	
+	pos XSIZ(125),YSIZ(54)
+	button gosub "OK",*ok
+	ok_btn = objinfo(stat, 2)
+	if darkmode = 1:SetWindowTheme ok_btn, "DarkMode_Explorer"
+	
+	pos 0,YSIZ(54)
+	button langmsg(3),*exit_tray
+	exit_btn = objinfo(stat, 2)
+	if darkmode = 1:SetWindowTheme exit_btn, "DarkMode_Explorer"
+	
+	oncmd gosub *changed_dark, 0x001A
+	
+	//SetWindowPos hwnd,-1,(ginfo_dispx/2)-(ginfo_sizex/2), (ginfo_dispy/2)-(ginfo_sizey/2), 0, 0, SWP_NOSIZE
+	gosub *_sethotkey
+	
+	*roop
+	wait 25
+	if bye:goto *exit_tray
+	goto *roop
+	
+	stop
+
+//ホットキーの検出
+*sendhotkey
+if wparam = 1{
+		gosub *off_cmd
+		window = GetForegroundWindow()
+		
+		if window = hwnd:gosub *on_cmd:return
+	
+		if chkflag = 0{
+			gosub *sendsquarecorner//四角に変更
+		}else{
+			gosub *sendsmallcorner//小さい角丸に変更
+		}
+	
+		waitEx 15
+		gosub *on_cmd
+		window = 0
+}
+return
+
+*popup
+//右クリックの処理
+if (0x0201==lparam){
+	gosub *off_cmd
+	//ウィンドウを中央・手前に表示
+	SetWindowPos hwnd,-1,(ginfo_dispx/2)-(ginfo_sizex/2), (ginfo_dispy/2)-(ginfo_sizey/2), 0, 0, SWP_NOSIZE /*| SWP_NOZORDER*/ | SWP_SHOWWINDOW// | SWP_FRAMECHANGED
+	onexit gosub *ok_exit
+}
+	if (0x0205==lparam){
+		
+		SetForegroundWindow hwnd//非表示のウィンドウをアクティブにする（これをやらないと他のところをクリックしてもメニューが消えない）
+		
+		TrackPopupMenu hMenu.1, $100, ginfo(0), ginfo(1), 0, hwnd, 0//コンテキストメニューの表示
+		
+		if stat = 0 : return
+
+		cmd == stat
+
+		switch cmd
+		case 1//小さい角丸にする
+			if  chkflag {
+				chkflag = 0
+				CheckMenuItem hMenu.1, cmd, MFS_UNCHECKED
+			}else {
+				chkflag = 1	
+				CheckMenuItem hMenu.1, cmd, MFS_CHECKED
+			}
+			swbreak
+		case 2//ホットキーの設定
+			gosub *off_cmd
+			SetWindowPos hwnd,-1,(ginfo_dispx/2)-(ginfo_sizex/2), (ginfo_dispy/2)-(ginfo_sizey/2), 0, 0, SWP_NOSIZE /*| SWP_NOZORDER*/ | SWP_SHOWWINDOW// | SWP_FRAMECHANGED
+			onexit gosub *ok_exit
+			swbreak
+		case 3//スタートアップに登録
+		
+			exist startup
+			if strsize = -1{
+				
+				if nomsg{
+					CreateShortcut ExeName,"/nomsg",ExeName, 0,startup
+				}else{
+					CreateShortcut ExeName,"",ExeName, 0,startup
+				}
+				MessageBoxW hwnd,langmsg(5),TITL,64 | 0x00040000 | 0x00010000
+				CheckMenuItem hMenu.1, cmd, MFS_CHECKED
+			}else{
+				delete startup
+				MessageBoxW hwnd,langmsg(6),TITL,64 | 0x00040000 | 0x00010000
+				CheckMenuItem hMenu.1, cmd, MFS_UNCHECKED
+			}
+		
+			swbreak
+		case 4//メッセージを表示しない
+			if nomsg {
+				nomsg = 0
+				CheckMenuItem hMenu.1, cmd, MFS_UNCHECKED
+			}else{
+				nomsg = 1
+				CheckMenuItem hMenu.1, cmd, MFS_CHECKED
+			}
+			swbreak
+		case 5//終了
+			bye = 1
+			swbreak
+		case 6//About
+			gosub *cmd_about
+			swbreak
+		swend
+	}
+	return
+*tasktray
+	sdim ExeName , 0x104+1 , 0
+	dim nid , NOTIFYICONDATA_STRUCTSIZE/4
+	GetModuleFileName 0 , ExeName , 0x104
+	ExtractIconEx ExeName,0,0,hDefaultIcon,1
+	nid.0 = NOTIFYICONDATA_STRUCTSIZE , hwnd , 0
+	nid.3 = 7
+	nid.4 = 0x0501 , hDefaultIcon
+	
+	cnvstow nid.6,TITL//タスクトレイのアイコンの表示名
+	ExeName = cnvwtos(ExeName)
+	
+	Shell_NotifyIcon 0,nid//タスクトレイに常駐する
+return
+*exit_tray
+	UnregisterHotKey hwnd,1//ホットキーを解除
+	
+	DestroyMenu hMenu.1
+	Shell_NotifyIcon 2 ,nid//タスクトレイのアイコンを消去
+	CleanupAppRunChecker
+	end
+stop
+
+*ok_exit
+if iparam = 1:goto *exit_tray
+if wparam = 0{
+ 	gsel 0,-1
+	
+	exist "config.ini"
+	
+	if strsize > 0 {
+		/*
+		sdim settedhotkey
+		noteload "config.ini"
+		noteget settedhotkey,0
+		
+		hotkey = int(settedhotkey)
+		settedhotkey = ""
+		*/
+		hotkey = getini(dir_cur+"\\config.ini","hotkey",0,0)
+		if hotkey = 0:hotkey =891
+	}else{
+		hotkey = 891
+	}
+	
+	sendmsg hHotkeyCtrl, HKM_SETHOTKEY,hotkey, 0
+	
+	onexit *exit_tray
+	gosub *on_cmd
+}else{
+	goto *exit_tray
+}
+return
+
+ stop
+ 
+ *ok
+    sendmsg hHotkeyCtrl, HKM_GETHOTKEY, 0, 0
+     hotkey = stat
+gosub *sethotkey
+
+onexit *exit_tray
+gosub *on_cmd
+gsel 0,-1
+return
+
+*sethotkey
+if hotkey = 0:return
+    // 仮想キーコード(下位8bit)
+    vtKey = hotkey & 0xFF
+    // 修飾キーコード(上位8bit)
+    modKey = (hotkey >> 8) & 0xFF
+    isCtrl = modkey & HOTKEYF_CONTROL
+    isShift = modkey & HOTKEYF_SHIFT
+    isAlt = modkey & HOTKEYF_ALT
+    //isExt = modkey & HOTKEYF_EXT
+
+mod_key = 0
+if isCtrl:mod_key = mod_key | MOD_CONTROL
+if isShift:mod_key = mod_key | MOD_SHIFT
+if isAlt:mod_key = mod_key | MOD_ALT
+
+setini dir_cur+"\\config.ini","hotkey",str(hotkey)
+
+//ホットキーの登録
+//dialog strf("デバッグ %X",vtKey)
+UnregisterHotKey hwnd,1
+RegisterHotKey hwnd,1,mod_key,vtKey
+if stat:dialog langmsg(4),,TITL
+return
+
+*_sethotkey
+if hotkey = 0:return
+    // 仮想キーコード(下位8bit)
+    vtKey = hotkey & 0xFF
+    // 修飾キーコード(上位8bit)
+    modKey = (hotkey >> 8) & 0xFF
+    isCtrl = modkey & HOTKEYF_CONTROL
+    isShift = modkey & HOTKEYF_SHIFT
+    isAlt = modkey & HOTKEYF_ALT
+    //isExt = modkey & HOTKEYF_EXT
+
+mod_key = 0
+if isCtrl:mod_key = mod_key | MOD_CONTROL
+if isShift:mod_key = mod_key | MOD_SHIFT
+if isAlt:mod_key = mod_key | MOD_ALT
+
+//ホットキーの登録
+//dialog strf("デバッグ %X",vtKey)
+RegisterHotKey hwnd,1,mod_key,vtKey
+return
+*dummy
+return
+*off_cmd
+oncmd gosub *dummy, 0x0501
+oncmd gosub *dummy,WM_HOTKEY
+return
+*on_cmd
+oncmd gosub *popup , 0x0501
+oncmd gosub *sendhotkey,WM_HOTKEY
+return
+
+*changed_dark
+oncmd 0
+waitEx 50
+if get_dark_color_type() = 1{
+	darkmode = 1
+	opt = 1
+	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+	color 55,55,55:boxf
+	color 255,255,255
+	SetWindowTheme ok_btn, "DarkMode_Explorer"
+	SetWindowTheme exit_btn, "DarkMode_Explorer"
+}else{
+	darkmode = 0
+	opt = 0
+	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+	color 200,200,200:boxf
+	color 0,0,0
+	SetWindowTheme ok_btn,""
+	SetWindowTheme exit_btn,""
+}
+pos 0,0
+mes langmsg(1)
+oncmd 1
+return

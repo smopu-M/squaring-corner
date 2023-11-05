@@ -1,0 +1,143 @@
+*pointmain
+screen 0,XSIZ(430),YSIZ(130),,4
+
+if nonclick =0{
+	GetWindowLongW hwnd, -16
+	SetWindowLongW hwnd, -16, stat -$80000
+}else{
+	GetWindowLongW hwnd, -16
+	SetWindowLongW hwnd, -16, stat -$20000
+}
+	opt = DWMWCP_DONOTROUND
+	DwmSetWindowAttribute hwnd,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
+	if stat:goto *checkos
+
+
+*main
+
+if get_dark_color_type() = 1{
+	darkmode = 1
+	opt = 1
+	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+	cls 4:color 55,55,55:boxf
+	color 255,255,255
+}else{
+	darkmode = 0
+	opt = 0
+	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+	cls
+	color 200,200,200:boxf
+	color 0,0,0
+}
+
+gosub *langfont
+
+title TITL
+
+if nonclick =0{
+	onclick gosub *click : flag=0
+	SetCapture hwnd
+	
+	switch langcode
+	case 0x0411
+		mes "角丸を無効にしたいウィンドウをクリックしてください。\nShiftキーを押しながらクリックで小さい丸角化\nEnterキーやCtrlキーでも可（ESCキーで終了）"
+		swbreak
+	case 0x0412
+		mes "둥근 모서리를 비활성화하려는 창을 클릭합니다.\nShift키를 누른 채로 클릭하여 작은 원형으로 만들기.\nEnter 키나 Ctrl 키로도 가능. (ESC 키로 종료)"
+		swbreak
+	case 0x0804
+		mes "单击要禁用圆角的窗口。按住 Shift 键并单击以创建小圆角。\n您还可以使用 Enter 键或 Ctrl 键。"
+		swbreak
+	case 0x0404
+		mes "單擊要禁用圓角的窗口。按住 Shift 鍵並單擊以創建小圓角。\n您還可以使用 Enter 鍵或 Ctrl 鍵。"
+		swbreak
+	default
+		mes "Click on the window for which want to disable rounded\ncorners.\nHold down the Shift key and click to make small rounded\ncorners.\nAlso be done with the Enter key or Ctrl key.\nPress to ESC key to Exit."
+		swbreak
+	swend
+	
+	
+}else{
+	
+	switch langcode
+	case 0x0411
+		mes "角丸を無効にしたいウィンドウをポイントして、\nEnterまたはCtrlキーを押してください。\nShiftキーを押しながらEnterキーとCtrlキーで小さい丸角化\n（ESCキーで終了）"
+	swbreak
+	case 0x0412
+		mes "둥근 모서리를 비활성화하려는 창을 가리킨 다음\nEnter 또는 Ctrl 키를 누릅니다.\nShift 키를 누른 상태에서 Enter 및 Ctrl 키로 작은 둥근\n(ESC 키로 종료)"
+		swbreak
+	case 0x0804
+		mes "指向要禁用圆角的窗口，然后按 Enter 或 Ctrl。\n您还可以使用 Enter 键或 Ctrl 键。"
+		swbreak
+	case 0x0404
+		mes "指向要禁用圓角的窗口，然後按 Enter 或 Ctrl。\n您還可以使用 Enter 鍵或 Ctrl 鍵。"
+		swbreak
+	default
+		mes "Point to the window for which want to disable rounded\ncorners and Press Enter key or Ctrl key.\nHold down the Shift key and press Enter key or Ctrl key for\nsmall rounded corners.\nPress to ESC key to Exit."
+		swbreak
+	swend
+}
+
+pos ,106
+objmode 2
+
+if nonclick = 1{
+button gosub "About",*about
+if darkmode = 1:SetWindowTheme objinfo(stat, 2), "DarkMode_Explorer"
+}
+
+gsel 0,2
+onexit *exit
+
+repeat
+getkey enter,13
+getkey ctrl,17
+getkey esc,27
+if flag | enter | ctrl:break
+if esc:goto *exit
+wait 1
+loop
+
+*begin
+if nonclick =0:ReleaseCapture:onclick 0
+
+window = WindowFromPoint(ginfo_mx,ginfo_my)
+wait 15
+
+//子ウィンドウから親ウィンドウをたどる
+repeat
+GetWindowLong window,-16
+if (stat&0x40000000)=0 {	//WS_CHILDを持っていないのなら
+	if window = hwnd{
+		lopflag = 1
+		break
+	}
+	getkey small,16
+	if small {
+		gosub *sendsmallcorner
+		break
+	}else{
+		gosub *sendsquarecorner
+		break
+	}
+}
+
+object = GetParent(window)
+if object = 0:break
+window = object
+loop
+
+if lopflag = 1:lopflag = 0:goto *main
+
+end
+stop
+
+*click
+	flag=1
+	return
+*about
+MessageBoxExW hwnd,TITL + "\nCopyright ©All Rights Reserved. Yukkuri XP 2023.","About",64 | 0x00040000,0x0409
+return
+*exit
+if nonclick =0:ReleaseCapture:onclick 0
+end
