@@ -1,3 +1,12 @@
+/*
+HSP3でのSQUARING CORNERのソースコードです。
+標準のHSPのエディタではコンパイルすることはできません。
+このソースをコンパイルするには、エディタがUnicodeに対応している必要があります。
+
+Unicode対応のエディタは、ここからダウンロードできます。
+https://hsp.moe/hsed3s/alpha1/
+*/
+
 #include "hsp3utf.as"
 
 #uselib "kernel32.dll"
