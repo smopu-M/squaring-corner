@@ -234,6 +234,7 @@ return
 
 return
 *sendsmallcorner
+
 			opt = 0
 			DwmGetWindowAttribute window,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
 			if opt=DWMWCP_ROUNDSMALL {
