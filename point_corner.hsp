@@ -1,4 +1,6 @@
 *pointmain
+sdim langmsg,9
+
 screen 0,XSIZ(430),YSIZ(130),,4
 
 if nonclick =0{
