@@ -1,4 +1,4 @@
-# squaring-corner
+# SQUARING CORNER
 Change to Rounded window to square in Windows 11.
 
 This is a software to restore rounded windows to square in Windows 11.
