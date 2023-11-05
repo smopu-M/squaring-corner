@@ -1,8 +1,6 @@
 # SQUARING CORNER
-Change to Rounded window to square in Windows 11.
+Change to Rounded window to square in Windows 11.  This is a software to restore rounded windows to square in Windows 11.  It is useful when the bottom left or right edge of a window is obscured by rounded corners.
 
-This is a software to restore rounded windows to square in Windows 11.
-It is useful when the bottom left or right edge of a window is obscured by rounded corners.
 When launched, the software resides in the task tray, and pressing a set hotkey can change the current active window from rounded corners to squares.
 It can also be reversed back to rounded corners (set to Ctrl + Shift +F12 by default).
 If you check the "Make small rounded corners" checkbox on the context menu, the window will become small rounded corners when you press the set hotkey.
