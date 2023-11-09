@@ -12,3 +12,7 @@ If you check the "Make small rounded corners" checkbox on the context menu, the 
 It is possible to change to a different hotkey from the task tray context menu hotkey settings.
   
 You can also specify /nomsg from the command line or check the "Don't show message" checkbox in the context menu of the task tray to prevent messages from appearing when changing window corners.
+
+The display languages supported are English, Japanese, Chinese, and Korean.
+
+This software is developed with Hot Soup Processor.
