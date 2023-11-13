@@ -7,7 +7,7 @@ When launched, the software resides in the task tray, and pressing a set hotkey 
   
 It can also be reversed back to rounded corners (set to Ctrl + Shift +F12 by default).
   
-If you check the "Make small rounded corners" checkbox on the context menu, the window will become small rounded corners when you press the set hotkey.
+If you check the "Enable Small rounded corners" checkbox on the context menu, the window will become small rounded corners when you press the set hotkey.
   
 It is possible to change to a different hotkey from the task tray context menu hotkey settings.
   
