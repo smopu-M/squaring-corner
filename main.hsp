@@ -1,10 +1,12 @@
 /*
-HSP3でのSQUARING CORNERのソースコードです。
+SQUARING CORNERのソースコードです。
+
 標準のHSPのエディタではコンパイルすることはできません。
 このソースをコンパイルするには、エディタがUnicodeに対応している必要があります。
+VSCodeやUnicode対応のエディタによる環境構築が必要です。
 
-Unicode対応のエディタは、ここからダウンロードできます。
-https://hsp.moe/hsed3s/alpha1/
+また、営利、非営利を問わず無料でご利用いただけますが無保証です。
+改変物を再配布する場合は、オリジナル作者が「ゆっくりXP」であることを区別できる形でお願いします。
 */
 
 #include "hsp3utf.as"
@@ -31,23 +33,9 @@ https://hsp.moe/hsed3s/alpha1/
 #include "user32.as"
 #func SetProcessDPIAware "SetProcessDPIAware"
 
-#define global SWP_NOSIZE		$00000001
-#define global SWP_NOMOVE 0x0002
-#define global SWP_NOZORDER	$00000004
-#define global SWP_FRAMECHANGED	$00000020
-#define global SWP_SHOWWINDOW 0x0040
-#define global HWND_TOPMOST	$FFFFFFFF
-
-#define LOGPIXELSX	$00000058
-#define LOGPIXELSY	$0000005A
-#define ctype XSIZ(%1) int(%1*XDPI/96)
-#define ctype YSIZ(%1) int(%1*YDPI/96)
-
-#define ctype SIZX(%1) int(%1*96/XDPI)
-#define ctype SIZY(%1) int(%1*96/YDPI)
-#define TITL "SQUARING CORNER v3.0"
-
-#packopt name "SQUARING_CORNER"
+#define TITL "SQUARING CORNER"
+#define VER "4.2"
+#packopt name "squaring_corner"
 #packopt runtime "square.hrt"
 #packopt hide 1
 
@@ -80,49 +68,16 @@ if varptr(SetProcessDPIAware){
 }
 
 exist "config.ini"
-if strsize ! -1{
-langcode = getini(dir_cur+"\\config.ini","lang",0,0)
-}
-
+if strsize > 0{
+langcode = getini(dir_cur+"\\config.ini","lang",GetUserDefaultUILanguage(),0)
+}else{
 //Windowsの表示言語の状態を取得
 if langcode = 0:langcode = GetUserDefaultUILanguage()
-
+}
 //シンガポール中国語の場合は中国語（中国）に変更
 if langcode = 0x1004:langcode = 0x0804
-/*
-dim OSVERSIONINFO, 37
-	OSVERSIONINFO = $94
-	RtlGetVersion varptr(OSVERSIONINFO)
 
-if (OSVERSIONINFO(1)<=10){
-
-	if (OSVERSIONINFO(3)<22000){
-switch langcode
-case 0x0411
-	MessageBoxW 0,"このアプリはWindows 11以降のみ対応しています。\n正常に動作しない可能性がありますが続行しますか？",TITL,48|4|0x00000100
-	if stat = 7:end
-	swbreak
-case 0x0412
-	MessageBoxW 0,"이 앱은 Windows 11 이상에서만 지원됩니다.\n제대로 작동하지 않을 수 있지만 계속하시겠습니까?",TITL,48|4|0x00000100
-	if stat = 7:end
-	swbreak
-case 0x0804
-	MessageBoxW 0,"此应用程序仅与 Windows 11 或更高版本兼容。\n即使它可能无法正常工作，您仍想继续吗？",TITL,48|4|0x00000100
-	if stat = 7:end
-	swbreak
-case 0x0404
-	MessageBoxW 0,"此應用程序僅與 Windows 11 或更高版本兼容。\n即使它可能無法正常工作，您仍想繼續嗎？",TITL,48|4|0x00000100
-	if stat = 7:end
-	swbreak
-default
-	MessageBoxExW 0,"This app is only compatible with Windows 11 or later.\nDo you want to continue even though it may not work properly?",TITL,48|4|0x00000100,0x0409
-	if stat = 7:end
-swbreak
-swend
-	}
-
-}
-*/
+if langcode = 0x0C04:langcode = 0x0404
 
 cmdline = getpath(dir_cmdline,16)
 nonclick = 0
@@ -134,9 +89,10 @@ cmdline = ""
 foreach 引数
 if 引数(cnt) = "/about" | 引数(cnt) = "-about":gosub *about:end
 if 引数(cnt) = "/nomsg" | 引数(cnt) = "-nomsg":nomsg = 1
-if 引数(cnt) = "/point" | 引数(cnt) = "-point":nonclick = 1:goto *pointmain
+if 引数(cnt) = "/point" | 引数(cnt) = "-point":ptflag = 1:nonclick = 1:goto *pointmain
 if 引数(cnt) = "/click" | 引数(cnt) = "-click":goto *pointmain
 loop
+if nomsg :goto *pointmain
 
 #addition "active_corners.hsp"
 #include "point_corner.hsp"
@@ -174,19 +130,19 @@ return
 				if nomsg = 0{
 				switch langcode
 				case 0x0411
-					langmsg(8) = "ウィンドウを角丸に戻しました。"
+					langmsg(8) = "ウィンドウの角丸をデフォルトに戻しました。"
 					swbreak
 				case 0x0412
-					langmsg(8) = "창을 모서리 동그라미로 되돌렸습니다."
+					langmsg(8) = "둥근 모서리 창을 기본값으로 변경했습니다."
 					swbreak
 				case 0x0804
-					langmsg(8) = "将窗口改回圆角。"
+					langmsg(8) = "将圆角窗口改回默认值。"
 					swbreak
 				case 0x0404
-					langmsg(8) = "將視窗改回圓角。"
+					langmsg(8) = "將圓角視窗變更回預設值。"
 					swbreak
 				default
-					langmsg(8) = "Changed the window back to rounded corners."
+					langmsg(8) = "Changed the rounded corners window back to default."
 					swbreak
 				swend
 				}
@@ -217,15 +173,20 @@ return
 			
 			//角丸ウィンドウの処理
 			DwmSetWindowAttribute window,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
-		
 			if stat = 0{
 				if nomsg = 0{
-					MessageBoxW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000
+					if langcode = 0x0411|langcode = 0x0412|langcode = 0x0804|langcode = 0x0404{
+						MessageBoxExW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000,langcode
+					}else{
+						MessageBoxExW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000,0x0409
+					}
 					langmsg(8) = ""
 					
 					//ウィンドウを閉じていない場合や表示されている場合はアクティブにする
-					if IsWindow(window){
-						if IsWindowVisible(window):SetForegroundWindow window
+					if IsWindow(window) & ptflag = 0{
+						if IsWindowVisible(window){
+							SetForegroundWindow window
+						}
 					}
 				}
 			}else{
@@ -233,6 +194,7 @@ return
 			}
 
 return
+
 *sendsmallcorner
 
 			opt = 0
@@ -244,7 +206,7 @@ return
 				if nomsg = 0{
 				switch langcode
 				case 0x0411
-					langmsg(8) = "ウィンドウを角丸に戻しました。"
+					langmsg(8) = "ウィンドウの角丸をデフォルトに戻しました。"
 					swbreak
 				case 0x0412
 					langmsg(8) = "창을 모서리 동그라미로 되돌렸습니다."
@@ -289,12 +251,96 @@ return
 		
 			if stat = 0{
 				if nomsg = 0{
-					MessageBoxW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000
+					
+					if langcode = 0x0411|langcode = 0x0412|langcode = 0x0804|langcode = 0x0404{
+						MessageBoxExW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000,langcode
+					}else{
+						MessageBoxExW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000,0x0409
+					}
 					langmsg(8) = ""
 					
 					//ウィンドウを閉じていない場合や表示されている場合はアクティブにする
-					if IsWindow(window){
-						if IsWindowVisible(window):SetForegroundWindow window
+					if IsWindow(window) & ptflag = 0{
+						if IsWindowVisible(window){
+							SetForegroundWindow window
+						}
+					}
+				}
+			}else{
+				gosub *sippai
+			}
+return
+
+*sendroundcorner
+
+			opt = 0
+			DwmGetWindowAttribute window,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
+			if opt=DWMWCP_ROUND {
+				
+				opt=DWMWCP_DEFAULT
+				
+				if nomsg = 0{
+				switch langcode
+				case 0x0411
+					langmsg(8) = "ウィンドウの角丸をデフォルトに戻しました。"
+					swbreak
+				case 0x0412
+					langmsg(8) = "둥근 모서리 창을 기본값으로 변경했습니다."
+					swbreak
+				case 0x0804
+					langmsg(8) = "将圆角窗口改回默认值。"
+					swbreak
+				case 0x0404
+					langmsg(8) = "將視窗變更為普通圓角。"
+					swbreak
+				default
+					langmsg(8) = "Changed the Normal rounded corners window."
+					swbreak
+				swend
+				}
+			
+				
+			} else {
+				
+				opt=DWMWCP_ROUND
+				
+				if nomsg = 0{
+				switch langcode
+				case 0x0411
+					langmsg(8) = "ウィンドウを通常の角丸に変更しました。"
+					swbreak
+				case 0x0412
+					langmsg(8) = "창을 일반 모서리로 변경했습니다."
+					swbreak
+				case 0x0804
+					langmsg(8) = "将窗口更改为普通圆角。"
+					swbreak
+				case 0x0404
+					langmsg(8) = "將視窗變更為普通圓角。"
+					swbreak
+				default
+					langmsg(8) = "Changed the window to normal rounded corners."
+					swbreak
+				swend
+				}
+			}
+			//角丸ウィンドウの処理
+			DwmSetWindowAttribute window,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
+			if stat = 0{
+				if nomsg = 0{
+					
+					if langcode = 0x0411|langcode = 0x0412|langcode = 0x0804|langcode = 0x0404{
+						MessageBoxExW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000,langcode
+					}else{
+						MessageBoxExW hwnd,langmsg(8),TITL,64 | 0x00040000 | 0x00010000,0x0409
+					}
+					langmsg(8) = ""
+					
+					//ウィンドウを閉じていない場合や表示されている場合はアクティブにする
+					if IsWindow(window) & ptflag =0{
+						if IsWindowVisible(window){
+							SetForegroundWindow window
+						}
 					}
 				}
 			}else{
@@ -305,19 +351,19 @@ return
 
 switch langcode
 case 0x0411
-	MessageBoxW 0,"このアプリは Windows 11以降用です。\nお使いのOSは、角丸ウィンドウをサポートされていないため実行できません。",TITL,16 | 0x00010000
+	MessageBoxExW 0,"本ソフトはWindows 11以降用です。\nお使いのOSでは、角丸ウィンドウがサポートされていないため使用できません。",TITL+" - 終了します ",16 | 0x00010000,langcode
 swbreak
 case 0x0412
-	MessageBoxW 0,"이 앱은 Windows 11 이후용입니다.\n이 OS는 모서리 동그라미 창이를 지원되지 않아 실행할 수 없습니다.",TITL,16 | 0x00010000
+	MessageBoxExW 0,"이 앱은 Windows 11 이후용입니다.\n이 OS는 모서리 동그라미 창이를 지원되지 않아 실행할 수 없습니다.",TITL,16 | 0x00010000,langcode
 swbreak
 case 0x0804
-	MessageBoxW 0,"此应用程序适用于 Windows 11 及更高版本。 \n您的操作系统不支持窗口圆角。",TITL,16 | 0x00010000
+	MessageBoxExW 0,"此应用程序适用于 Windows 11 及更高版本。 \n您的操作系统不支持窗口圆角。",TITL,16 | 0x00010000,langcode
 swbreak
 case 0x0404
-	MessageBoxW 0,"此應用程式適用於 Windows 11 及更高版本。 \n您的作業系統不支援視窗圓角。",TITL,16 | 0x00010000
+	MessageBoxExW 0,"此應用程式適用於 Windows 11 及更高版本。 \n您的作業系統不支援視窗圓角。",TITL,16 | 0x00010000,langcode
 swbreak
 default
-	MessageBoxExW 0,"This app is for Windows 11 and above. This cannot be used because your OS does not support rounded corners.",TITL,16 | 0x00010000,0x0409
+	MessageBoxExW 0,"This app is for Windows 11 and above. This cannot be used because your OS does not support rounded corners.",TITL + " - Exit",16 | 0x00010000,0x0409
 swbreak
 swend
 
@@ -328,19 +374,38 @@ oncmd 0
 gosub *about
 oncmd 1
 return
+*win_sippai
+switch langcode
+case 0x0411
+	MessageBoxExW 0,"ウィンドウの取得に失敗しました。",TITL,16 | 0x00040000 | 0x00010000,langcode
+swbreak
+case 0x0412
+	MessageBoxExW 0,"창을 얻지 못했습니다.",TITL,16 | 0x00040000 | 0x00010000,langcode
+swbreak
+case 0x0804
+	MessageBoxExW 0,"无法获取窗口。",TITL,16 | 0x00040000 | 0x00010000,langcode
+swbreak
+case 0x0404
+	MessageBoxExW 0,"無法獲取視窗。",TITL,16 | 0x00040000 | 0x00010000,langcode
+swbreak
+default
+	MessageBoxExW 0,"Failed to get window.",TITL,16 | 0x00040000 | 0x00010000,0x0409
+swbreak
+swend
+return
 *sippai
 switch langcode
 case 0x0411
-	MessageBoxW 0,"角丸ウィンドウの処理に失敗しました。",TITL,16 | 0x00040000 | 0x00010000
+	MessageBoxExW 0,"角丸ウィンドウの処理に失敗しました。",TITL,16 | 0x00040000 | 0x00010000,langcode
 swbreak
 case 0x0412
-	MessageBoxW 0,"둥근 창 처리에 실패했습니다.",TITL,16 | 0x00040000 | 0x00010000
+	MessageBoxExW 0,"둥근 모서리 창 처리에 실패했습니다.",TITL,16 | 0x00040000 | 0x00010000,langcode
 swbreak
 case 0x0804
-	MessageBoxW 0,"无法处理窗口的圆角。",TITL,16 | 0x00040000 | 0x00010000
+	MessageBoxExW 0,"无法处理窗口的圆角。",TITL,16 | 0x00040000 | 0x00010000,langcode
 swbreak
 case 0x0404
-	MessageBoxW 0,"無法處理窗口的圓角。",TITL,16 | 0x00040000 | 0x00010000
+	MessageBoxExW 0,"無法處理窗口的圓角。",TITL,16 | 0x00040000 | 0x00010000,langcode
 swbreak
 default
 	MessageBoxExW 0,"Failed to process rounded corner the window.",TITL,16 | 0x00040000 | 0x00010000,0x0409
