@@ -1,4 +1,14 @@
+/*
+このソース単体ではコンパイルできません。
+コンパイルする場合は、main.hspからコンパイルしてください。
+*/
 *pointmain
+
+if AlreadyAppRunningPoint(){
+	CleanupAppRunCheckerPoint
+	end
+}
+
 sdim langmsg,9
 
 screen 0,XSIZ(430),YSIZ(130),,4
@@ -12,8 +22,7 @@ if nonclick =0{
 }
 	opt = DWMWCP_DONOTROUND
 	DwmSetWindowAttribute hwnd,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
-	if stat:goto *checkos
-
+	if stat:CleanupAppRunCheckerPoint:goto *checkos
 
 *main
 
@@ -42,19 +51,19 @@ if nonclick =0{
 	
 	switch langcode
 	case 0x0411
-		mes "角丸を無効にしたいウィンドウをクリックしてください。\nShiftキーを押しながらクリックで小さい丸角化\nEnterキーやCtrlキーでも可（ESCキーで終了）"
+		mes "四角にしたいウィンドウをクリックしてください。\nShiftキーを押しながらクリックで小さい丸角化\nEnterキーやCtrlキーでも可（ESCキーで終了）"
 		swbreak
 	case 0x0412
-		mes "둥근 모서리를 비활성화하려는 창을 클릭합니다.\nShift키를 누른 채로 클릭하여 작은 원형으로 만들기.\nEnter 키나 Ctrl 키로도 가능. (ESC 키로 종료)"
+		mes "사각형으로 만들려는 창을 클릭합시오.\nShift키를 누른 채로 클릭하여 작은 원형으로 만들기.\nEnter 키나 Ctrl 키로도 가능. (ESC 키로 종료)"
 		swbreak
 	case 0x0804
-		mes "单击要禁用圆角的窗口。按住 Shift 键并单击以创建小圆角。\n您还可以使用 Enter 键或 Ctrl 键。"
+		mes "单击要使其成为正方形的窗口。按住 Shift 键并单击以创建小\n圆角。\n您还可以使用 Enter 键或 Ctrl 键。"
 		swbreak
 	case 0x0404
-		mes "單擊要禁用圓角的窗口。按住 Shift 鍵並單擊以創建小圓角。\n您還可以使用 Enter 鍵或 Ctrl 鍵。"
+		mes "按一下要使其成為正方形的視窗。按住 Shift 鍵並單擊以創建小\n圓角。\n您還可以使用 Enter 鍵或 Ctrl 鍵。"
 		swbreak
 	default
-		mes "Click on the window for which want to disable rounded\ncorners.\nHold down the Shift key and click to make small rounded\ncorners.\nAlso be done with the Enter key or Ctrl key.\nPress to ESC key to Exit."
+		mes "Click on the window you want to square.\nHold down the Shift key and click to make small rounded\ncorners.\nAlso be done with the Enter key or Ctrl key.\nPress to ESC key to Exit."
 		swbreak
 	swend
 	
@@ -63,19 +72,19 @@ if nonclick =0{
 	
 	switch langcode
 	case 0x0411
-		mes "角丸を無効にしたいウィンドウをポイントして、\nEnterまたはCtrlキーを押してください。\nShiftキーを押しながらEnterキーとCtrlキーで小さい丸角化\n（ESCキーで終了）"
+		mes "四角にしたいウィンドウをポイントして、\nEnterまたはCtrlキーを押してください。\nShiftキーを押しながらEnterキーとCtrlキーで小さい丸角化\n（ESCキーで終了）"
 	swbreak
 	case 0x0412
-		mes "둥근 모서리를 비활성화하려는 창을 가리킨 다음\nEnter 또는 Ctrl 키를 누릅니다.\nShift 키를 누른 상태에서 Enter 및 Ctrl 키로 작은 둥근\n(ESC 키로 종료)"
+		mes "사각형으로 만들려는 창을 가리킨 다음\nEnter 또는 Ctrl 키를 누르십시오.\nShift 키를 누른 상태에서 Enter 및 Ctrl 키로 작은 둥근\n(ESC 키로 종료)"
 		swbreak
 	case 0x0804
-		mes "指向要禁用圆角的窗口，然后按 Enter 或 Ctrl。\n您还可以使用 Enter 键或 Ctrl 键。"
+		mes "指向要方形化的窗口并按 Enter 或 Ctrl。\n您还可以使用 Enter 键或 Ctrl 键。"
 		swbreak
 	case 0x0404
-		mes "指向要禁用圓角的窗口，然後按 Enter 或 Ctrl。\n您還可以使用 Enter 鍵或 Ctrl 鍵。"
+		mes "指向要方形化的窗口，然後按 Enter 或 Ctrl。\n您還可以使用 Enter 鍵或 Ctrl 鍵。"
 		swbreak
 	default
-		mes "Point to the window for which want to disable rounded\ncorners and Press Enter key or Ctrl key.\nHold down the Shift key and press Enter key or Ctrl key for\nsmall rounded corners.\nPress to ESC key to Exit."
+		mes "Point to the window you want to square and\nPress Enter or Ctrl.\ncorners and Press Enter key or Ctrl key.\nHold down the Shift key and press Enter key or Ctrl key for\nsmall rounded corners. Press to ESC key to Exit."
 		swbreak
 	swend
 }
@@ -90,6 +99,12 @@ if darkmode = 1:SetWindowTheme objinfo(stat, 2), "DarkMode_Explorer"
 
 gsel 0,2
 onexit *exit
+
+repeat
+getkey ctrl,17
+if ctrl=0:break
+wait
+loop
 
 repeat
 getkey enter,13
@@ -109,7 +124,7 @@ wait 15
 //子ウィンドウから親ウィンドウをたどる
 repeat
 GetWindowLong window,-16
-if (stat&0x40000000)=0 {	//WS_CHILDを持っていないのなら
+if (stat&0x40000000)=0 {
 	if window = hwnd{
 		lopflag = 1
 		break
@@ -131,6 +146,7 @@ loop
 
 if lopflag = 1:lopflag = 0:goto *main
 
+CleanupAppRunCheckerPoint
 end
 stop
 
@@ -138,8 +154,23 @@ stop
 	flag=1
 	return
 *about
-MessageBoxExW hwnd,TITL + "\nCopyright ©All Rights Reserved. Yukkuri XP 2023.","About",64 | 0x00040000,0x0409
+MessageBoxExW hwnd,TITL +" "+ VER + "\nCopyright ©All Rights Reserved. Yukkuri XP 2023 - 2024.","About",64 | 0x00040000,0x0409
 return
 *exit
 if nonclick =0:ReleaseCapture:onclick 0
 end
+#defcfunc ParentWindow int p1
+window_ = p1
+if IsWindow(Window_) = 0:return 0
+
+repeat
+
+GetWindowLong window_,-16
+if (stat&0x40000000)=0:break
+
+object = GetParent(window_)
+if object = 0:break
+window_ = object
+
+loop
+return window_
