@@ -37,11 +37,7 @@
 #define global ctype SIZX(%1) int(%1*96/XDPI)
 #define global ctype SIZY(%1) int(%1*96/YDPI)
 
-#define global MOD_ALT 1
-#define global MOD_CONTROL 2
-#define global MOD_SHIFT 4
-#define global MOD_WIN 8
-
+/*
 #module
 	//標準精度のタイマー
 	#uselib "kernel32.dll"
@@ -65,7 +61,7 @@ return
 	awaitEx (p1 * 10)
 return
 #global
-
+*/
 
 #module mCOMOBJMACRO
 #define global ctype SUCCEEDED(%1) ((%1) >= 0)
