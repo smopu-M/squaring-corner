@@ -11,7 +11,7 @@ if AlreadyAppRunningPoint(){
 
 sdim langmsg,9
 
-screen 0,XSIZ(430),YSIZ(130),,4
+screen 0,XSIZ(430),YSIZ(130),4|screen_hide
 
 if nonclick =0{
 	GetWindowLongW hwnd, -16
@@ -23,6 +23,7 @@ if nonclick =0{
 	opt = DWMWCP_DONOTROUND
 	DwmSetWindowAttribute hwnd,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
 	if stat:CleanupAppRunCheckerPoint:goto *checkos
+	gsel 0,1
 
 *main
 
@@ -154,10 +155,11 @@ stop
 	flag=1
 	return
 *about
-MessageBoxExW hwnd,TITL +" "+ VER + "\nCopyright ©All Rights Reserved. Yukkuri XP 2023 - 2024.","About",64 | 0x00040000,0x0409
+MessageBoxExW hwnd,TITL +" v"+ VER + "\nCopyright ©All Rights Reserved. Yukkuri XP 2023 - 2024.","About",64 | 0x00040000,0x0409
 return
 *exit
 if nonclick =0:ReleaseCapture:onclick 0
+CleanupAppRunCheckerPoint
 end
 #defcfunc ParentWindow int p1
 window_ = p1
