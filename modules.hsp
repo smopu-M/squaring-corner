@@ -5,6 +5,16 @@
 #define global SWP_SHOWWINDOW 0x0040
 #define global HWND_TOPMOST	$FFFFFFFF
 
+#define global MFS_CHECKED 0x08
+#define global MFS_UNCHECKED 0x00
+#define global MF_DISABLED 0x02
+#define global NOTIFYICONDATA_STRUCTSIZE 88
+
+#define global MOD_ALT 1
+#define global MOD_CONTROL 2
+#define global MOD_SHIFT 4
+#define global MOD_WIN 8
+
 #define DT_TOP              0x00000000
 #define DT_LEFT             0x00000000
 #define DT_CENTER           0x00000001
