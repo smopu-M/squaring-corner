@@ -16,3 +16,16 @@ You can also specify /nomsg from the command line or check the "Don't show messa
 The display languages supported are English, Japanese, Chinese, and Korean.
 
 This software is developed with Hot Soup Processor.
+
+Windows 11で四隅が丸くなったウィンドウを四角に戻すソフトです。
+
+ウィンドウの下部の両端が見切れてしまう場合などに便利です。
+
+
+起動するとタスクトレイに常駐し、設定されたホットキーを押すと、現在のアクティブウィンドウを角丸から四角に変更することができます。また逆に角丸に戻すことも可能です。
+
+
+表示言語は日本語と英語と中国語と韓国語に対応。
+
+
+※このソフトは、Windows 10以下のOSでは使用できません。
