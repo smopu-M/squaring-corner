@@ -3,11 +3,6 @@
 コンパイルする場合は、main.hspからコンパイルしてください。
 */
 
-#define MFS_CHECKED 0x08
-#define MFS_UNCHECKED 0x00
-#define MF_DISABLED 0x02
-#define NOTIFYICONDATA_STRUCTSIZE 88
-
 //二重起動防止
 
 if (AlreadyAppRunning()) {
@@ -33,7 +28,10 @@ end
 }
 	
 	//変数の初期化
-	nid.0=0
+	dpis = 0
+	dk = 0
+	;is_show = 0
+	
 	vtKey = 0
 	modKey =0
 	isCtrl = 0
@@ -42,15 +40,19 @@ end
 	hotkey = 0
 	nomsg = 0
 	ptflag = 0
-	sdim dummy_text//ダミーの文字列変数
+	
+	wposx = 0
+	wposy = 0
+	sdim dummy_text,32//ダミーの文字列変数
 	
 	//終了の処理
 	onexit *exit_tray
+	onerror *error
 	
 	//タスクトレイのクリックの処理
 	oncmd gosub *popup ,0x0501
 	
-	screen 0,XSIZ(250),YSIZ(85),screen_hide|screen_tool
+	screen 0,DPISIZ(250)*4,DPISIZ(84)*4,screen_hide|screen_tool,,,DPISIZ(250),DPISIZ(84)
 	redraw 0
 	//ホットキー設定ウィンドウを四角に変更する
 	opt = DWMWCP_DONOTROUND
@@ -80,15 +82,15 @@ end
 					langmsg = "圓角設定","熱鍵設置","注冊啓動","退出","更改了熱鍵。","在創業公司注冊。","啓動注冊已被取消。","不顯示訊息","將視窗指定為點","方","通常","小","更改熱鍵失敗。"
 					swbreak
 				default
-					langmsg = "Rounded corners option","Hotkey settings","Register for startup","Exit","Changed the hotkey.","Registered for a startup.","Unregistered for a startup.","Don't show message","Specify the window from point","Square","Normal","Small","Failed a change hot key."
+					langmsg = "Rounded Corners Option","Hotkey Configuration","Register for startup","Exit","Changed the hotkey.","Registered for a startup.","Unregistered for a startup.","Do not show message","Specify the window from point","Square","Normal","Small","Failed a change hot key."
 					swbreak
 		swend
 
 //サブメニューの生成
 		hMenu.0 = CreatePopupMenu()
-		AppendMenuW hMenu.0, 0, 8,langmsg(9)
-		AppendMenuW hMenu.0, 0, 9,langmsg(10)
-		AppendMenuW hMenu.0, 0, 10,langmsg(11)
+		AppendMenuW hMenu.0, 0, 8,langmsg(9)+" (&Q)"
+		AppendMenuW hMenu.0, 0, 9,langmsg(10)+" (&N)"
+		AppendMenuW hMenu.0, 0, 10,langmsg(11)+" (&S)"
 //コンテキストメニューの生成
 		hMenu.1 = CreatePopupMenu()
 		AppendMenuW hMenu.1, 0x10, hMenu.0, langmsg(0)+" (&S)"
@@ -108,6 +110,13 @@ end
 	gosub *tasktray
 	//エクスプローラーを再起動してもタスクトレイのアイコンが消えないようにする（タスクバーが消えてもタスクトレイに表示する処理）
 	oncmd gosub *tasktray,RegisterWindowMessageW("TaskbarCreated")
+	
+	//メニューをダークモード化
+	lib_h = LoadLibrary("uxtheme.dll")	//SetPreferredAppModeとRefreshImmersiveColorPolicyStateを呼ぶための準備
+	add = GetProcAddress(lib_h,135) 	//SetPreferredAppModeのアドレスを取得
+	prm=1 : dum=callfunc(prm,add,1)	//SetPreferredAppModeを実行
+	add=GetProcAddress(lib_h,104)	//RefreshImmersiveColorPolicyStateのアドレスを取得
+	dum=callfunc(prm,add,0)	//RefreshImmersiveColorPolicyStateを実行
 	
 	//スタートアップフォルダの取得
 	startup=dirinfo($10007)
@@ -146,90 +155,81 @@ if get_dark_color_type() = 1{
 	darkmode = 1
 	opt = 1
 	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
-	cls 4:color 55,55,55:boxf 0,0,XSIZ(250),YSIZ(24)
+	cls 4:color 55,55,55:boxf 0,0,DPISIZ(250),DPISIZ(24)
 	color 255,255,255
 }else{
 	darkmode = 0
 	opt = 0
 	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
 	cls
-	color 200,200,200:boxf 0,0,XSIZ(250),YSIZ(24)
+	color 200,200,200:boxf 0,0,DPISIZ(250),DPISIZ(24)
 	color 0,0,0
 }
-
-//メニューをダークモード化
-	lib_h = LoadLibrary("uxtheme.dll")	//SetPreferredAppModeとRefreshImmersiveColorPolicyStateを呼ぶための準備
-	add = GetProcAddress(lib_h,135) 	//SetPreferredAppModeのアドレスを取得
-	prm=1 : dum=callfunc(prm,add,1)	//SetPreferredAppModeを実行
-	add=GetProcAddress(lib_h,104)	//RefreshImmersiveColorPolicyStateのアドレスを取得
-	dum=callfunc(prm,add,0)	//RefreshImmersiveColorPolicyStateを実行
 	
 	gosub *langfont
 	objmode 2
 	
 	title TITL
-	rc=0,0,XSIZ(250),YSIZ(24)
+	rc=0,0,DPISIZ(250),DPISIZ(24)
 	DrawTextExW hdc,langmsg(1),-1,varptr(rc),0x25,0
 	
-	pos 0,YSIZ(24)
-	winobj "msctls_hotkey32","Hotkey", 0, WS_CHILD | WS_VISIBLE, XSIZ(250), YSIZ(30)//ホットキーコントロールを生成
+	pos 0,DPISIZ(24)
+	winobj "msctls_hotkey32","Hotkey", 0, WS_CHILD | WS_VISIBLE, DPISIZ(250), DPISIZ(30)//ホットキーコントロールを生成
 	hHotkeyCtrl  = objinfo_hwnd(stat)
 	sendmsg hHotkeyCtrl, $30, hFont
 	
 	//ホットキー設定の読み込み
-	exist "config.ini"
-	if strsize > 0 {
-		/*
-		sdim settedhotkey
-		noteload "config.ini"
-		noteget settedhotkey,0
-		
-		hotkey = int(settedhotkey)
-		settedhotkey = ""
-		*/
-		hotkey = getini(dir_cur+"\\config.ini","hotkey",0,0)
-		if hotkey = 0:hotkey =891
-	}else{
-		hotkey = 891
-	}
+	hotkey = getini(dir_cur+"\\config.ini","hotkey",0,0)
+	if hotkey = 0:hotkey =891
 	
 	sendmsg hHotkeyCtrl, HKM_SETHOTKEY,hotkey, 0
 	oncmd gosub *sendhotkey,WM_HOTKEY
 	
-	objsize XSIZ(125),YSIZ(30)
+	objsize DPISIZ(125),DPISIZ(30)
 	
-	pos XSIZ(125),YSIZ(54)
+	pos DPISIZ(125),DPISIZ(54)
 	switch langcode
 	case 0x0412
 	button gosub "확인",*ok
 	swbreak
+	/*
+	case 0x1004
+	button gosub "确定",*ok
+	swbreak
+	*/
 	case 0x0804
 	button gosub "确定",*ok
 	swbreak
 	case 0x0404
 	button gosub "確定",*ok
 	swbreak
+	/*
+	case 0x0C04
+	button gosub "確定",*ok
+	swbreak
+	*/
 	default
 	button gosub "OK",*ok
 	swend
 	ok_btn = objinfo(stat, 2)
 	if darkmode = 1:SetWindowTheme ok_btn, "DarkMode_Explorer"
 	
-	pos 0,YSIZ(54)
+	pos 0,DPISIZ(54)
 	button langmsg(3),*exit_tray
 	exit_btn = objinfo(stat, 2)
 	if darkmode = 1:SetWindowTheme exit_btn, "DarkMode_Explorer"
 	
-	oncmd gosub *changed_dark, 0x001A
-	
 	//SetWindowPos hwnd,-1,(ginfo_dispx/2)-(ginfo_sizex/2), (ginfo_dispy/2)-(ginfo_sizey/2), 0, 0, SWP_NOSIZE
 	gosub *_sethotkey
 
-	redraw 1,0,0,XSIZ(250),YSIZ(24)
+	redraw 1,0,0,DPISIZ(250),DPISIZ(24)
+	
+	oncmd gosub *chgsettings, 0x001A
+	oncmd gosub *chgdpi,WM_DPICHANGED
 	
 	assert
 	*roop
-	wait 50
+	wait 100
 	if bye:goto *exit_tray
 	goto *roop
 	
@@ -240,10 +240,11 @@ if get_dark_color_type() = 1{
 if wparam = 1{
 		gosub *off_cmd
 	if ptflag {
-		if nomsg = 0:oldwin = GetForegroundWindow()
+		if nomsg = 0/*:oncmd 0,WM_DPICHANGED*/:oldwin = GetForegroundWindow()
 		Window = ParentWindow(WindowFromPoint(ginfo_mx,ginfo_my))
 		if Window = 0:gosub *win_sippai:return
 	}else{
+		;if nomsg = 0:oncmd 0,WM_DPICHANGED
 		window = GetForegroundWindow()
 		if IsWindow(Window) = 0:gosub *win_sippai:return
 	}
@@ -266,6 +267,7 @@ if wparam = 1{
 			if IsWindowVisible(oldwin):SetForegroundWindow oldwin
 		}
 		oldwin = 0
+		;oncmd 1,WM_DPICHANGED
 	}
 		wait 15
 		gosub *on_cmd
@@ -276,20 +278,18 @@ return
 *popup
 //右クリックの処理
 if (0x0201==lparam){
-	gosub *off_cmd
-	gosub *about
+	gosub *cmd_about
 	/*
 	ウィンドウを中央・手前に表示
 	SetWindowPos hwnd,-1,(ginfo_dispx/2)-(ginfo_sizex/2), (ginfo_dispy/2)-(ginfo_sizey/2), 0, 0, SWP_NOSIZE  | SWP_SHOWWINDOW// | SWP_FRAMECHANGED
 	onexit gosub *ok_exit
 	*/
-	gosub *on_cmd
 }
 	if (0x0205==lparam){
 		
 		SetForegroundWindow hwnd//非表示のウィンドウをアクティブにする（これをやらないと他のところをクリックしてもメニューが消えない）
 		
-		TrackPopupMenu hMenu.1,$100,ginfo_mx - XSIZ(110),ginfo_my,0,hwnd,0//コンテキストメニューの表示
+		TrackPopupMenu hMenu.1,$100,ginfo_mx,ginfo_my,0,hwnd,0//コンテキストメニューの表示
 		
 		if stat = 0 : return
 
@@ -301,7 +301,12 @@ if (0x0201==lparam){
 			swbreak
 		case 2//ホットキーの設定
 			gosub *off_cmd
+			;is_show = 1
+			
+			width ,,0,0,1
+			wait 1
 			SetWindowPos hwnd,-1,(ginfo_dispx/2)-(ginfo_sizex/2), (ginfo_dispy/2)-(ginfo_sizey/2), 0, 0, SWP_NOSIZE /*| SWP_NOZORDER*/ | SWP_SHOWWINDOW// | SWP_FRAMECHANGED
+			
 			onexit gosub *ok_exit
 			swbreak
 		case 3
@@ -401,23 +406,21 @@ return
 	//タスクバーが表示されている場合、タスクトレイのアイコンを消去
 	if FindWindowW("Shell_traywnd",0):Shell_NotifyIcon 2 ,nid
 	CleanupAppRunChecker
-	end:end
+	repeat
+	end
+	loop
 stop
 
+//ホットキーの設定のウィンドウを閉じた場合の処理
 *ok_exit
+;is_show = 0
 if iparam = 1:goto *exit_tray
 if wparam = 0{
  	gsel 0,-1
-	
-	exist "config.ini"
-	
-	if strsize >= 0 {
+
 		hotkey = getini(dir_cur+"\\config.ini","hotkey",0,0)
 		if hotkey = 0:hotkey =891
-	}else{
-		hotkey = 891
-	}
-	
+
 	sendmsg hHotkeyCtrl, HKM_SETHOTKEY,hotkey, 0
 	
 	onexit *exit_tray
@@ -509,29 +512,106 @@ oncmd 1,0x0501
 oncmd 1,WM_HOTKEY
 return
 
-*changed_dark
-oncmd 0
-wait 50
-if get_dark_color_type() = 1{
-	darkmode = 1
-	opt = 1
-	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
-	color 55,55,55:boxf 0,0,XSIZ(250),YSIZ(25)
-	color 255,255,255
-	SetWindowTheme ok_btn, "DarkMode_Explorer"
-	SetWindowTheme exit_btn, "DarkMode_Explorer"
-}else{
-	darkmode = 0
-	opt = 0
-	DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
-	color 200,200,200:boxf 0,0,XSIZ(250),YSIZ(25)
-	color 0,0,0
-	SetWindowTheme ok_btn,"Explorer"
-	SetWindowTheme exit_btn,"Explorer"
-}
-pos 0,0
-rc=0,0,XSIZ(250),YSIZ(24)
-DrawTextExW hdc,langmsg(1),-1,varptr(rc),0x25,0
-redraw 1,0,0,XSIZ(250),YSIZ(24)
-oncmd 1
+*chgsettings
+		oncmd 0,0x001A
+		if get_dark_color_type() = 1{
+			if darkmode :oncmd 1,0x001A:return
+			darkmode = 1
+			opt = 1
+			DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+			color 55,55,55:boxf 0,0,DPISIZ(250),DPISIZ(25)
+			color 255,255,255
+			SetWindowTheme ok_btn, "DarkMode_Explorer"
+			SetWindowTheme exit_btn, "DarkMode_Explorer"
+		}else{
+			if darkmode = 0:oncmd 1,0x001A:return
+			darkmode = 0
+			opt = 0
+			DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+			color 200,200,200:boxf 0,0,DPISIZ(250),DPISIZ(25)
+			color 0,0,0
+			SetWindowTheme ok_btn,"Explorer"
+			SetWindowTheme exit_btn,"Explorer"
+		}
+		pos 0,0
+		rc=0,0,DPISIZ(250),DPISIZ(24)
+		DrawTextExW hdc,langmsg(1),-1,varptr(rc),0x25,0
+		redraw 1,0,0,DPISIZ(250),DPISIZ(24)
+		oncmd 1,0x001A
+return
+
+*chgdpi
+	dpis = wparam
+	dupptr wposx,lparam,4
+	dupptr wposy, lparam+4,4
+	/*
+	await 4
+	oncmd 0,WM_DPICHANGED
+	await 4
+	*/
+	High_DPI = HIWORD(dpis)
+	WinSizeDPI DPISIZ(250),DPISIZ(84),wposx,wposy,High_DPI
+	wposx = 0:wposy = 0
+		if darkmode = 1{
+		opt = 1
+		DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+		cls 4:color 55,55,55:boxf 0,0,DPISIZ(250),DPISIZ(24)
+		color 255,255,255
+	}else{
+		opt = 0
+		DwmSetWindowAttribute hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, varptr(opt), 4
+		cls
+		color 200,200,200:boxf 0,0,DPISIZ(250),DPISIZ(24)
+		color 0,0,0
+	}
+
+	gosub *langfont
+	objmode 2
+
+	title TITL
+	rc=0,0,DPISIZ(250),DPISIZ(24)
+	DrawTextExW hdc,langmsg(1),-1,varptr(rc),0x25,0
+
+	pos 0,DPISIZ(24)
+	winobj "msctls_hotkey32","Hotkey", 0, WS_CHILD | WS_VISIBLE, DPISIZ(250), DPISIZ(30)//ホットキーコントロールを生成
+	hHotkeyCtrl  = objinfo_hwnd(stat)
+	sendmsg hHotkeyCtrl, $30, hFont
+
+	sendmsg hHotkeyCtrl, HKM_SETHOTKEY,hotkey, 0
+
+	objsize DPISIZ(125),DPISIZ(30)
+
+	pos DPISIZ(125),DPISIZ(54)
+	switch langcode
+	case 0x0412
+		button gosub "확인",*ok
+	swbreak
+	case 0x0804
+		button gosub "确定",*ok
+	swbreak
+	case 0x0404
+		button gosub "確定",*ok
+	swbreak
+	default
+		button gosub "OK",*ok
+	swend
+	ok_btn = objinfo(stat, 2)
+	if darkmode = 1:SetWindowTheme ok_btn, "DarkMode_Explorer"
+
+	pos 0,DPISIZ(54)
+	button langmsg(3),*exit_tray
+	exit_btn = objinfo(stat, 2)
+	if darkmode = 1:SetWindowTheme exit_btn, "DarkMode_Explorer"
+	redraw 1,0,0,DPISIZ(250),DPISIZ(24)
+	dpis = 0
+	;oncmd 1,WM_DPICHANGED
+return
+
+#deffunc WinSizeDPI int wx,int wy,int psx ,int psy ,int _DPI
+	st = GetWindowLongW(hwnd,-16)
+	est=GetWindowLongW(hwnd,-20)
+	dim rect,4 : rect=0,0,wx,wy
+	AdjustWindowRectExForDpi varptr(rect),st,0,est,_DPI
+	w=rect(2)-rect(0) : h=rect(3)-rect(1)
+	SetWindowPos hwnd,0,psx,psy,w,h,0
 return
