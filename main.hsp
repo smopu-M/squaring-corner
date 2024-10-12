@@ -21,6 +21,11 @@ VSCodeやUnicode対応のエディタによる環境構築が必要です。
 #func ExtractIconEx	"ExtractIconExW" var,int,int,var,int
 #func Shell_NotifyIcon "Shell_NotifyIconW" int,var
 
+/*
+#uselib "Shcore.dll"
+#func GetDpiForMonitor "GetDpiForMonitor" int,int,var,var
+*/
+
 #uselib "gdi32.dll"
 #func GetDeviceCaps "GetDeviceCaps" int,int
 
@@ -31,10 +36,13 @@ VSCodeやUnicode対応のエディタによる環境構築が必要です。
 #func SetWindowTheme "SetWindowTheme" int, wptr,nullptr
 
 #include "user32.as"
-#func SetProcessDPIAware "SetProcessDPIAware"
+#func global SetProcessDpiAwarenessContext "SetProcessDpiAwarenessContext" int
+#func global SetProcessDPIAware "SetProcessDPIAware"
+#func global AdjustWindowRectExForDpi "AdjustWindowRectExForDpi" int,int,int,int,int
+#cfunc global GetDpiForSystem "GetDpiForSystem"
 
 #define TITL "SQUARING CORNER"
-#define VER "4.3"
+#define VER "4.6"
 #packopt name "squaring_corner"
 #packopt runtime "runtime.hrt"
 #packopt hide 1
@@ -54,26 +62,22 @@ VSCodeやUnicode対応のエディタによる環境構築が必要です。
 #enum global DWMWCP_ROUND
 #enum global DWMWCP_ROUNDSMALL
 
-#include "modules.hsp"
-
 //if varptr(SetWindowTheme) = 0:MessageBoxExW 0,"Failed to call uxtheme.dll",TITL,16 | 0x00010000 | 0x00040000,0x0409:end
 if varptr(DwmSetWindowAttribute) = 0:MessageBoxExW 0,"Failed to call dwmapi.dll",TITL,16 | 0x00010000 | 0x00040000,0x0409:end
 
-if varptr(SetProcessDPIAware){
-	XDPI=GetDeviceCaps(GetDC(0),LOGPIXELSX)
-	YDPI=GetDeviceCaps(GetDC(0),LOGPIXELSY)
+#ifdef _debug
+SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+gsel 0,-1
+#endif
+
+if varptr(GetDpiForSystem){
+	High_DPI = GetDpiForSystem()
 }else{
-	XDPI = 96
-	YDPI = 96
+	High_DPI = GetDeviceCaps(GetDC(0),LOGPIXELSY)
 }
 
-exist "config.ini"
-if strsize > 0{
 langcode = getini(dir_cur+"\\config.ini","lang",GetUserDefaultUILanguage(),0)
-}else{
-//Windowsの表示言語の状態を取得
-if langcode = 0:langcode = GetUserDefaultUILanguage()
-}
+
 langcode2 = langcode
 //シンガポール中国語の場合は中国語（中国）に変更
 if langcode = 0x1004:langcode = 0x0804
@@ -105,19 +109,19 @@ stop
 *langfont
 switch langcode
 case 0x0411
-font "Meiryo",YSIZ(16)
+font "Meiryo",DPISIZ(16)
 	swbreak
 case 0x0412
-	font "Malgun Gothic",YSIZ(16)
+	font "Malgun Gothic",DPISIZ(16)
 	swbreak
 case 0x0804
-	font "Microsoft YaHei UI",YSIZ(16)
+	font "Microsoft YaHei UI",DPISIZ(16)
 	swbreak
 case 0x0404
-	font "Microsoft JhengHei UI",YSIZ(16)
+	font "Microsoft JhengHei UI",DPISIZ(16)
 	swbreak
 default
-	font "Segoe UI",YSIZ(16)
+	font "Segoe UI",DPISIZ(16)
 swbreak
 swend
 
@@ -150,7 +154,7 @@ return
 					langmsg(0) = "將視窗更改為方形。"
 					swbreak
 				default
-					langmsg(0) = "Changed the window to Square."
+					langmsg(0) = "Changed the Window to Square."
 					swbreak
 				swend
 				}
@@ -210,7 +214,7 @@ return
 					langmsg(0) = "將視窗變更為小圓角。"
 					swbreak
 				default
-					langmsg(0) = "Changed the window to Small rounded corners."
+					langmsg(0) = "Changed the Window to Small Rounded corners."
 					swbreak
 				swend
 				}
@@ -260,7 +264,7 @@ return
 					langmsg(0) = "ウィンドウを通常の角丸に変更しました。"
 					swbreak
 				case 0x0412
-					langmsg(0) = "창을 일반 모서리로 변경했습니다."
+					langmsg(0) = "창을 통상 모서리로 변경했습니다."
 					swbreak
 				case 0x0804
 					langmsg(0) = "将窗口更改为普通圆角。"
@@ -269,7 +273,7 @@ return
 					langmsg(0) = "將視窗變更為普通圓角。"
 					swbreak
 				default
-					langmsg(0) = "Changed the window to Normal rounded corners."
+					langmsg(0) = "Changed the Window to Normal rounded corners."
 					swbreak
 				swend
 				}
@@ -317,33 +321,35 @@ default
 swbreak
 swend
 
-end
+end:end
 stop
 
 *defmsg
-				switch langcode
-				case 0x0411
-					langmsg(0) = "ウィンドウの角丸をデフォルトに戻しました。"
-					swbreak
-				case 0x0412
-					langmsg(0) = "둥근 모서리 창을 기본값으로 변경했습니다."
-					swbreak
-				case 0x0804
-					langmsg(0) = "将圆角窗口改回默认值。"
-					swbreak
-				case 0x0404
-					langmsg(0) = "將圓角視窗變更回預設值。"
-					swbreak
-				default
-					langmsg(0) = "Changed the Rounded corners Window back to default."
-					swbreak
-				swend
+switch langcode
+	case 0x0411
+	langmsg(0) = "ウィンドウの角丸をデフォルトに戻しました。"
+swbreak
+case 0x0412
+	langmsg(0) = "둥근 모서리 창을 기본값으로 변경했습니다."
+swbreak
+	case 0x0804
+	langmsg(0) = "将圆角窗口改回默认值。"
+swbreak
+case 0x0404
+	langmsg(0) = "將圓角視窗變更回預設值。"
+swbreak
+default
+	langmsg(0) = "Changed the Rounded corners Window back to default."
+swbreak
+swend
 return
 
 *cmd_about
-oncmd 0
+gosub *off_cmd
+;oncmd 0,WM_DPICHANGED
 gosub *about
-oncmd 1
+gosub *on_cmd
+;oncmd 1,WM_DPICHANGED
 return
 
 *win_sippai
@@ -385,3 +391,8 @@ default
 swbreak
 swend
 return
+*error
+onerror 0
+oncmd 0
+MessageBoxExW hwnd,"An internal error has occurred and the software will exit.\nError code: "+str(err),TITL,16 |  0x00010000 | 0x00040000,0x0409
+goto *exit_tray
