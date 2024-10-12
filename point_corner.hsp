@@ -11,7 +11,8 @@ if AlreadyAppRunningPoint(){
 
 sdim langmsg,9
 
-screen 0,XSIZ(430),YSIZ(130),4|screen_hide
+screen 0,DPISIZ(430),DPISIZ(130),4|screen_hide
+oncmd *exit,WM_DPICHANGED
 
 if nonclick =0{
 	GetWindowLongW hwnd, -16
@@ -23,7 +24,6 @@ if nonclick =0{
 	opt = DWMWCP_DONOTROUND
 	DwmSetWindowAttribute hwnd,DWMWA_WINDOW_CORNER_PREFERENCE,varptr(opt),4
 	if stat:CleanupAppRunCheckerPoint:goto *checkos
-	gsel 0,1
 
 *main
 
@@ -41,7 +41,7 @@ if get_dark_color_type() = 1{
 	color 200,200,200:boxf
 	color 0,0,0
 }
-
+gsel 0,1
 gosub *langfont
 
 title TITL
@@ -102,14 +102,14 @@ gsel 0,2
 onexit *exit
 
 repeat
-getkey ctrl,17
+getkey ctrl,0xA2
 if ctrl=0:break
 wait
 loop
 
 repeat
 getkey enter,13
-getkey ctrl,17
+getkey ctrl,0xA2
 getkey esc,27
 if flag | enter | ctrl:break
 if esc:goto *exit
@@ -124,7 +124,7 @@ wait 15
 
 //子ウィンドウから親ウィンドウをたどる
 repeat
-GetWindowLong window,-16
+GetWindowLongW window,-16
 if (stat&0x40000000)=0 {
 	if window = hwnd{
 		lopflag = 1
@@ -167,7 +167,7 @@ if IsWindow(Window_) = 0:return 0
 
 repeat
 
-GetWindowLong window_,-16
+GetWindowLongW window_,-16
 if (stat&0x40000000)=0:break
 
 object = GetParent(window_)
